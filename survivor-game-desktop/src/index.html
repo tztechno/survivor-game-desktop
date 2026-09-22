@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>CYBER SURVIVORS - ネオン・オートアタックACT</title>
+  <meta name="description" content="押し寄せる敵の群れをオートアタックで薙ぎ払い、スキルを強化して生き残るサバイバーライク・アクションゲーム">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="game-container">
+    <!-- Game Canvas -->
+    <canvas id="game-canvas"></canvas>
+
+    <!-- Top HUD Overlay -->
+    <div id="hud-top" class="hud-layer hidden">
+      <!-- EXP Bar Container -->
+      <div class="exp-bar-wrapper">
+        <div class="exp-info">
+          <span class="level-badge" id="hud-level-badge"><span data-i18n="level">LV</span> <span id="hud-level">1</span></span>
+          <span class="exp-text" id="hud-exp-text">EXP 0 / 100</span>
+        </div>
+        <div class="exp-bar-bg">
+          <div class="exp-bar-fill" id="hud-exp-fill"></div>
+        </div>
+      </div>
+
+      <!-- Stats Bar (Timer, Kills, Score) -->
+      <div class="stats-bar">
+        <div class="stat-item">
+          <span class="stat-icon">⏱️</span>
+          <span class="stat-value" id="hud-time">00:00</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-icon">💀</span>
+          <span class="stat-value" id="hud-kills">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-icon">💎</span>
+          <span class="stat-value" id="hud-score">0</span>
+        </div>
+        <button id="btn-pause" class="hud-btn" title="Pause (P / ESC)">⏸️</button>
+        <button id="btn-sound" class="hud-btn" title="Toggle Sound (M)">🔊</button>
+        <button id="btn-lang-hud" class="hud-btn hud-btn-lang" title="Toggle Language">🌐</button>
+      </div>
+
+      <!-- Active Weapons / Passives Display -->
+      <div class="inventory-bar" id="hud-inventory">
+        <!-- Weapon slots injected dynamically -->
+      </div>
+
+      <!-- Quick Icon Legend (Screen Edge Overlay) -->
+      <div id="quick-legend" class="quick-legend-panel">
+        <div class="legend-header" id="legend-header">
+          <span class="legend-title"><span class="legend-icon">📋</span> <span data-i18n="legendTitle">マーク凡例</span></span>
+          <button id="btn-toggle-legend" class="legend-toggle-btn" title="Toggle Legend">▼</button>
+        </div>
+        <div class="legend-content" id="legend-content">
+          <!-- Item / Gem -->
+          <div class="legend-section">
+            <div class="legend-sec-title" data-i18n="legendCategorySystem">アイテム</div>
+            <div class="legend-item"><span class="li-icon">💎</span> <span class="li-text" data-i18n="legend_crystal">経験値結晶（拾うとLV UP）</span></div>
+          </div>
+          <!-- Weapons -->
+          <div class="legend-section">
+            <div class="legend-sec-title" data-i18n="legendCategoryWeapons">攻撃武器</div>
+            <div class="legend-item"><span class="li-icon">🔮</span> <span class="li-text" data-i18n="legend_magic_missile">誘導魔弾（最寄り自動狙撃）</span></div>
+            <div class="legend-item"><span class="li-icon">🛡️</span> <span class="li-text" data-i18n="legend_orbital_blades">回転刃（接近敵をノックバック）</span></div>
+            <div class="legend-item"><span class="li-icon">⚡</span> <span class="li-text" data-i18n="legend_thunder_smite">落雷（広範囲大ダメージ）</span></div>
+            <div class="legend-item"><span class="li-icon">🔥</span> <span class="li-text" data-i18n="legend_flame_aura">炎の輪（全周囲持続ダメージ）</span></div>
+            <div class="legend-item"><span class="li-icon">💠</span> <span class="li-text" data-i18n="legend_bouncing_shuriken">跳ね手裏剣（敵間バウンド）</span></div>
+          </div>
+          <!-- Passives -->
+          <div class="legend-section">
+            <div class="legend-sec-title" data-i18n="legendCategoryPassives">強化スキル</div>
+            <div class="legend-item"><span class="li-icon">⚔️</span> <span class="li-text" data-i18n="legend_might">攻撃力UP (+15%)</span></div>
+            <div class="legend-item"><span class="li-icon">⚡</span> <span class="li-text" data-i18n="legend_haste">攻撃速度UP (CD -12%)</span></div>
+            <div class="legend-item"><span class="li-icon">👟</span> <span class="li-text" data-i18n="legend_boots">移動速度UP (+12%)</span></div>
+            <div class="legend-item"><span class="li-icon">🧲</span> <span class="li-text" data-i18n="legend_magnet">吸引範囲拡大 (+35%)</span></div>
+            <div class="legend-item"><span class="li-icon">💚</span> <span class="li-text" data-i18n="legend_vitality">HP増加＆毎秒自動回復</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen Vignette / Low HP Warning -->
+    <div id="vignette-damage" class="vignette"></div>
+
+    <!-- Demo Mode Overlay Banner -->
+    <div id="demo-overlay" class="demo-overlay-layer hidden">
+      <div class="demo-badge-card">
+        <div class="demo-badge-title" data-i18n="demoBadge">⚡ DEMO PLAYING (AUTO-PILOT) ⚡</div>
+        <div class="demo-badge-sub" data-i18n="demoSub">画面タップまたは何かキーを押して今すぐ参戦！</div>
+        <div class="demo-badge-buttons">
+          <button id="btn-demo-play-now" class="btn-neon btn-primary pulse" data-i18n="demoPlayNow">PLAY NOW</button>
+          <button id="btn-demo-exit" class="btn-neon btn-secondary" data-i18n="demoExit">EXIT</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Title Screen -->
+    <div id="screen-title" class="screen-modal active">
+      <div class="modal-card title-card">
+        <!-- Top Bar with Language Toggle -->
+        <div class="title-top-actions">
+          <button id="btn-lang-title" class="btn-lang-pill">
+            <span class="lang-icon">🌐</span>
+            <span id="label-lang-title" data-i18n="langToggle">English</span>
+          </button>
+        </div>
+
+        <div class="glitch-title" data-text="CYBER SURVIVORS">CYBER SURVIVORS</div>
+        <p class="subtitle" data-i18n="subtitle">NEON AUTO-ATTACK ACTION</p>
+        
+        <div class="game-instructions">
+          <div class="instruction-row">
+            <span class="key-badge">WASD</span> / <span class="key-badge">↑←↓→</span>
+            <span class="desc" data-i18n="instMoveKey">移動（攻撃は完全自動）</span>
+          </div>
+          <div class="instruction-row">
+            <span class="key-badge">Mouse / Touch</span>
+            <span class="desc" data-i18n="instMoveMouse">ドラッグでも直感的に移動可能</span>
+          </div>
+          <div class="instruction-row">
+            <span class="key-badge">💎 EXP</span>
+            <span class="desc" data-i18n="instExp">敵を倒すと落ちる「光る経験値クリスタル（💎）」を拾ってレベルアップ！</span>
+          </div>
+        </div>
+
+        <div class="title-buttons-group">
+          <button id="btn-start" class="btn-neon btn-primary pulse" data-i18n="gameStart">GAME START</button>
+          <div class="title-secondary-btns">
+            <button id="btn-demo" class="btn-neon btn-demo" data-i18n="demoPlay">DEMO PLAY</button>
+            <button id="btn-manual-title" class="btn-neon btn-secondary" data-i18n="manual">遊び方</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Level Up Selection Modal -->
+    <div id="screen-levelup" class="screen-modal hidden">
+      <div class="modal-card levelup-card">
+        <div class="levelup-header">
+          <span class="levelup-tag" data-i18n="levelUpTag">LEVEL UP!</span>
+          <h2 class="levelup-title" data-i18n="levelUpTitle">強化アイテムを選択</h2>
+          <p class="levelup-subtitle" data-i18n="levelUpSubtitle">ビルドを選択して更なる猛攻に備えよ</p>
+        </div>
+
+        <div class="upgrade-cards-container" id="upgrade-cards-container">
+          <!-- Cards dynamically injected here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Pause Screen -->
+    <div id="screen-pause" class="screen-modal hidden">
+      <div class="modal-card pause-card">
+        <h2 class="modal-title" data-i18n="pauseTitle">PAUSED</h2>
+        <div class="pause-stats" id="pause-stats">
+          <!-- Build stats summary -->
+        </div>
+        <div class="modal-buttons">
+          <button id="btn-resume" class="btn-neon btn-primary" data-i18n="resume">再開する</button>
+          <button id="btn-manual-pause" class="btn-neon btn-secondary" data-i18n="manual">遊び方</button>
+          <button id="btn-restart-pause" class="btn-neon btn-secondary" data-i18n="restart">やり直す</button>
+          <button id="btn-lang-pause" class="btn-neon btn-secondary" data-i18n="langToggle">🌐 English</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="screen-gameover" class="screen-modal hidden">
+      <div class="modal-card gameover-card">
+        <div class="gameover-banner" data-i18n="missionFailed">MISSION FAILED</div>
+        <p class="gameover-subtitle" data-i18n="resultReport">サバイバル結果レポート</p>
+
+        <div class="results-grid">
+          <div class="result-box">
+            <span class="label" data-i18n="resSurviveTime">生存時間</span>
+            <span class="val" id="res-time">00:00</span>
+          </div>
+          <div class="result-box">
+            <span class="label" data-i18n="resReachedLevel">到達レベル</span>
+            <span class="val" id="res-level">LV 1</span>
+          </div>
+          <div class="result-box">
+            <span class="label" data-i18n="resKills">撃破数</span>
+            <span class="val" id="res-kills">0 匹</span>
+          </div>
+          <div class="result-box">
+            <span class="label" data-i18n="resScore">スコア</span>
+            <span class="val" id="res-score">0</span>
+          </div>
+        </div>
+
+        <div class="run-build-summary" id="res-build-summary">
+          <!-- Acquired upgrades summary -->
+        </div>
+
+        <button id="btn-retry" class="btn-neon btn-primary pulse" data-i18n="tryAgain">TRY AGAIN</button>
+      </div>
+    </div>
+
+    <!-- How to Play / Manual Modal -->
+    <div id="screen-manual" class="screen-modal hidden">
+      <div class="modal-card manual-card">
+        <div class="manual-header">
+          <h2 class="manual-title" data-i18n="manualTitle">CYBER SURVIVORS 遊び方</h2>
+          <button id="btn-manual-close" class="modal-close-btn" title="Close">✕</button>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="manual-tabs">
+          <button class="manual-tab-btn active" data-tab="overview" data-i18n="tabOverview">概要 & 目的</button>
+          <button class="manual-tab-btn" data-tab="controls" data-i18n="tabControls">操作方法</button>
+          <button class="manual-tab-btn" data-tab="weapons" data-i18n="tabWeapons">全武器ガイド</button>
+          <button class="manual-tab-btn" data-tab="passives" data-i18n="tabPassives">パッシブ強化</button>
+          <button class="manual-tab-btn" data-tab="tips" data-i18n="tabTips">サバイバルTips</button>
+        </div>
+
+        <!-- Tab Body -->
+        <div class="manual-content-body" id="manual-tab-content">
+          <!-- Dynamically filled with data-i18n-html -->
+        </div>
+
+        <div class="manual-footer">
+          <button id="btn-manual-close-footer" class="btn-neon btn-secondary" data-i18n="closeManual">閉じる</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Virtual Joystick Base (Auto-activates on touch) -->
+    <div id="touch-controls" class="touch-layer hidden">
+      <div id="joystick-base">
+        <div id="joystick-stick"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/i18n.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/entities.js"></script>
+  <script src="js/weapons.js"></script>
+  <script src="js/upgrades.js"></script>
+  <script src="js/renderer.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
