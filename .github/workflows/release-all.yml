@@ -60,6 +60,7 @@ jobs:
           path: |
             survivor-game-desktop/src-tauri/target/release/bundle/nsis/*.exe
             survivor-game-desktop/src-tauri/target/release/bundle/msi/*.msi
+          retention-days: 1
 
       - name: Upload macOS Bundle Artifact
         if: matrix.os != 'windows-latest'
@@ -68,3 +69,4 @@ jobs:
           name: CYBER_SURVIVORS_macOS_Bundle_${{ matrix.platform }}
           path: |
             survivor-game-desktop/src-tauri/target/release/bundle/dmg/*.dmg
+          retention-days: 1
